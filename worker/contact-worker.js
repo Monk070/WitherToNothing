@@ -40,6 +40,28 @@ export default {
       return new Response('Missing fields', { status: 400, headers: CORS_HEADERS });
     }
 
+    // Verify the Turnstile token (skipped if the secret isn't configured,
+    // so the form keeps working before/without Turnstile setup).
+    if (env.TURNSTILE_SECRET) {
+      const token = String(data.turnstileToken || '');
+      if (!token) {
+        return new Response('Verification required', { status: 403, headers: CORS_HEADERS });
+      }
+      const verify = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret: env.TURNSTILE_SECRET,
+          response: token,
+          remoteip: request.headers.get('CF-Connecting-IP') || undefined,
+        }),
+      });
+      const outcome = await verify.json();
+      if (!outcome.success) {
+        return new Response('Verification failed', { status: 403, headers: CORS_HEADERS });
+      }
+    }
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
       return new Response('Invalid email', { status: 400, headers: CORS_HEADERS });
     }
