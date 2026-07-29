@@ -99,7 +99,7 @@ export default {
       embeds: [
         {
           title: 'New message from withertonothing.com',
-          color: 0xf2a71b,
+          color: 0xf0ad0e,
           fields,
           timestamp: new Date().toISOString(),
         },

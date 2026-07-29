@@ -3,7 +3,7 @@
    ============================================ */
 
 :root {
-  --gold: #f2a71b;
+  --gold: #f0ad0e;
   --gold-dim: #a5720f;
   --black: #050505;
   --dark: #0d0d0d;
@@ -139,7 +139,7 @@ main {
   aspect-ratio: 16 / 9;
   height: auto;
   border: 1px solid var(--gold-dim);
-  box-shadow: 0 0 45px rgba(242, 167, 27, 0.15);
+  box-shadow: 0 0 45px rgba(240, 173, 14, 0.15);
 }
 
 /* ---------- Band members ---------- */
@@ -408,7 +408,7 @@ footer .socials svg {
 .socials a:hover {
   background: var(--gold);
   border-color: var(--gold);
-  box-shadow: 0 0 25px rgba(242, 167, 27, 0.35);
+  box-shadow: 0 0 25px rgba(240, 173, 14, 0.35);
 }
 
 .socials a:hover svg {
