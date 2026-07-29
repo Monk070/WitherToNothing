@@ -28,9 +28,40 @@ export default {
     const email = String(data.email || '').trim().slice(0, 200);
     const phone = String(data.phone || '').trim().slice(0, 50);
     const message = String(data.message || '').trim().slice(0, 1500);
+    const honeypot = String(data.website || '').trim();
+
+    // Bots fill the hidden "website" field; humans never see it. Pretend
+    // success so the bot doesn't learn it was caught.
+    if (honeypot) {
+      return new Response('OK', { headers: CORS_HEADERS });
+    }
 
     if (!name || !email || !message) {
       return new Response('Missing fields', { status: 400, headers: CORS_HEADERS });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      return new Response('Invalid email', { status: 400, headers: CORS_HEADERS });
+    }
+
+    // Check the email's domain actually accepts mail (has MX, or at least
+    // an A record as fallback). Fail open on DNS lookup errors so a DNS
+    // hiccup never blocks a legitimate message.
+    try {
+      const domain = email.split('@')[1];
+      const lookup = async (type) => {
+        const res = await fetch(
+          `https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${type}`,
+          { headers: { accept: 'application/dns-json' } }
+        );
+        const json = await res.json();
+        return Array.isArray(json.Answer) && json.Answer.length > 0;
+      };
+      if (!(await lookup('MX')) && !(await lookup('A'))) {
+        return new Response('Invalid email domain', { status: 400, headers: CORS_HEADERS });
+      }
+    } catch {
+      // DNS check unavailable — allow the message through.
     }
 
     const fields = [

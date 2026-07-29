@@ -33,6 +33,9 @@
       </p>
 
       <form class="contact-form" id="contact-form" novalidate>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"
+               style="position: absolute; left: -9999px; height: 0; width: 0; border: 0; padding: 0;">
+
         <label for="name">Name</label>
         <input type="text" id="name" name="name" required>
 
@@ -127,8 +130,16 @@
                 email: form.email.value,
                 phone: form.phone.value,
                 message: form.message.value,
+                website: form.website.value,
               }),
             });
+            if (res.status === 400 && (await res.text()).includes('email')) {
+              status.style.color = '#e05252';
+              status.textContent = 'That email address doesn’t look right — please double-check it.';
+              contactForm.email.classList.add('error');
+              contactForm.email.focus();
+              return;
+            }
             if (!res.ok) throw new Error('Request failed');
             status.style.color = '#f2a71b';
             status.textContent = 'Message sent. We’ll get back to you soon.';
