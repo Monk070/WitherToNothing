@@ -12,6 +12,11 @@
       box-sizing: border-box;
     }
 
+    ::selection {
+      background: #f0ad0e;
+      color: #000;
+    }
+
     html, body {
       height: 100%;
     }
@@ -66,12 +71,12 @@
     }
 
     .glitch-a {
-      filter: hue-rotate(-45deg) saturate(3);
+      filter: grayscale(1) brightness(2.6); /* white ghost */
       animation: glitch-a 7s steps(1) infinite;
     }
 
     .glitch-b {
-      filter: hue-rotate(160deg) saturate(2.5);
+      filter: brightness(0); /* black slices that erase parts of the sigil */
       animation: glitch-b 8.5s steps(1) infinite;
     }
 
