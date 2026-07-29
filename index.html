@@ -17,21 +17,103 @@
     }
 
     body {
-      background: #000;
+      background: radial-gradient(ellipse at center, #0c0a04 0%, #000 70%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2.5rem;
+      gap: 3rem;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow: hidden;
     }
 
-    .landing-gif {
-      max-width: 90vw;
-      max-height: 70vh;
-      object-fit: contain;
+    /* ---------- Sigil ---------- */
+
+    .sigil {
+      position: relative;
+      width: min(560px, 85vw);
+      animation: drift 9s ease-in-out infinite;
     }
+
+    .sigil img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* soft blurred aura behind everything — the "ethereal" halo */
+    .aura {
+      position: absolute;
+      inset: 0;
+      filter: blur(28px) brightness(1.3);
+      opacity: 0.35;
+      transform: scale(1.06);
+      animation: breathe 9s ease-in-out infinite;
+    }
+
+    .base {
+      position: relative;
+      animation: glow 9s ease-in-out infinite;
+    }
+
+    /* chromatic glitch layers — invisible most of the time, burst in slices */
+    .glitch {
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .glitch-a {
+      filter: hue-rotate(-45deg) saturate(3);
+      animation: glitch-a 7s steps(1) infinite;
+    }
+
+    .glitch-b {
+      filter: hue-rotate(160deg) saturate(2.5);
+      animation: glitch-b 8.5s steps(1) infinite;
+    }
+
+    @keyframes drift {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-14px); }
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 0.25; transform: scale(1.04); }
+      50%      { opacity: 0.5;  transform: scale(1.09); }
+    }
+
+    @keyframes glow {
+      0%, 100% { filter: drop-shadow(0 0 14px rgba(242, 167, 27, 0.35)); }
+      50%      { filter: drop-shadow(0 0 38px rgba(242, 167, 27, 0.6)); }
+    }
+
+    @keyframes glitch-a {
+      0%, 100% { opacity: 0; }
+      11% { opacity: 0.75; transform: translate(-7px, 3px);  clip-path: inset(8% 0 72% 0); }
+      12% { opacity: 0.75; transform: translate(5px, -2px);  clip-path: inset(55% 0 18% 0); }
+      13% { opacity: 0; transform: none; clip-path: none; }
+      38% { opacity: 0.6;  transform: translate(9px, 0) skewX(-4deg); clip-path: inset(30% 0 45% 0); }
+      39% { opacity: 0; transform: none; clip-path: none; }
+      67% { opacity: 0.8;  transform: translate(-5px, -4px); clip-path: inset(70% 0 5% 0); }
+      68.5% { opacity: 0.8; transform: translate(6px, 1px);  clip-path: inset(12% 0 60% 0); }
+      70% { opacity: 0; transform: none; clip-path: none; }
+    }
+
+    @keyframes glitch-b {
+      0%, 100% { opacity: 0; }
+      24% { opacity: 0.7; transform: translate(8px, -3px);  clip-path: inset(40% 0 35% 0); }
+      25% { opacity: 0.7; transform: translate(-6px, 2px);  clip-path: inset(5% 0 80% 0); }
+      26% { opacity: 0; transform: none; clip-path: none; }
+      52% { opacity: 0.55; transform: translate(-9px, 0) skewX(5deg); clip-path: inset(60% 0 15% 0); }
+      53.5% { opacity: 0; transform: none; clip-path: none; }
+      81% { opacity: 0.75; transform: translate(4px, 4px);  clip-path: inset(20% 0 55% 0); }
+      82% { opacity: 0; transform: none; clip-path: none; }
+    }
+
+    /* ---------- Link ---------- */
 
     .follow-link {
       color: #f2a71b;
@@ -58,10 +140,29 @@
       0%, 100% { box-shadow: 0 0 8px rgba(242, 167, 27, 0.15); }
       50%      { box-shadow: 0 0 28px rgba(242, 167, 27, 0.4); }
     }
+
+    /* ---------- Accessibility ---------- */
+
+    @media (prefers-reduced-motion: reduce) {
+      .sigil, .aura, .base, .follow-link {
+        animation: none;
+      }
+      .glitch {
+        display: none;
+      }
+      .base {
+        filter: drop-shadow(0 0 25px rgba(242, 167, 27, 0.45));
+      }
+    }
   </style>
 </head>
 <body>
-  <img class="landing-gif" src="Pictures/Wither To Nothing GIF.gif" alt="Wither To Nothing">
+  <div class="sigil">
+    <img class="aura" src="Pictures/Logo - Yellow With No Background.png" alt="" aria-hidden="true">
+    <img class="base" src="Pictures/Logo - Yellow With No Background.png" alt="Wither To Nothing">
+    <img class="glitch glitch-a" src="Pictures/Logo - Yellow With No Background.png" alt="" aria-hidden="true">
+    <img class="glitch glitch-b" src="Pictures/Logo - Yellow With No Background.png" alt="" aria-hidden="true">
+  </div>
   <a class="follow-link" href="/home">Follow The Signs</a>
 </body>
 </html>
