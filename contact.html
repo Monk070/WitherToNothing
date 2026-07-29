@@ -39,21 +39,38 @@
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required>
 
+        <label for="phone">Contact Number <span style="color: #666; text-transform: none; letter-spacing: normal;">(optional)</span></label>
+        <input type="tel" id="phone" name="phone">
+
         <label for="message">Message</label>
         <textarea id="message" name="message" rows="6" required></textarea>
 
-        <button class="btn" type="submit" style="align-self: center;">Send Message</button>
+        <button class="btn" type="submit" style="align-self: center;" disabled>Send Message</button>
         <p id="form-status" role="status" style="text-align: center; letter-spacing: 0.1em;"></p>
       </form>
 
       <script>
         const WORKER_URL = 'https://YOUR-WORKER-NAME.YOUR-SUBDOMAIN.workers.dev';
 
-        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+        const contactForm = document.getElementById('contact-form');
+        const sendButton = contactForm.querySelector('button[type="submit"]');
+
+        const requiredFilled = () =>
+          contactForm.name.value.trim() !== '' &&
+          contactForm.email.value.trim() !== '' &&
+          contactForm.email.checkValidity() &&
+          contactForm.message.value.trim() !== '';
+
+        contactForm.addEventListener('input', () => {
+          sendButton.disabled = !requiredFilled();
+        });
+
+        contactForm.addEventListener('submit', async (e) => {
           e.preventDefault();
+          if (!requiredFilled()) return;
           const form = e.target;
           const status = document.getElementById('form-status');
-          const button = form.querySelector('button[type="submit"]');
+          const button = sendButton;
           button.disabled = true;
           status.style.color = '#b5b5b5';
           status.textContent = 'Sending…';
@@ -64,6 +81,7 @@
               body: JSON.stringify({
                 name: form.name.value,
                 email: form.email.value,
+                phone: form.phone.value,
                 message: form.message.value,
               }),
             });
@@ -75,7 +93,7 @@
             status.style.color = '#e05252';
             status.textContent = 'Something went wrong — please try again later.';
           } finally {
-            button.disabled = false;
+            button.disabled = !requiredFilled();
           }
         });
       </script>

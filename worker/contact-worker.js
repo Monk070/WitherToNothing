@@ -26,22 +26,28 @@ export default {
 
     const name = String(data.name || '').trim().slice(0, 100);
     const email = String(data.email || '').trim().slice(0, 200);
+    const phone = String(data.phone || '').trim().slice(0, 50);
     const message = String(data.message || '').trim().slice(0, 1500);
 
     if (!name || !email || !message) {
       return new Response('Missing fields', { status: 400, headers: CORS_HEADERS });
     }
 
+    const fields = [
+      { name: 'Name', value: name },
+      { name: 'Email', value: email },
+    ];
+    if (phone) {
+      fields.push({ name: 'Contact Number', value: phone });
+    }
+    fields.push({ name: 'Message', value: message });
+
     const payload = {
       embeds: [
         {
           title: 'New message from withertonothing.com',
           color: 0xf2a71b,
-          fields: [
-            { name: 'Name', value: name },
-            { name: 'Email', value: email },
-            { name: 'Message', value: message },
-          ],
+          fields,
           timestamp: new Date().toISOString(),
         },
       ],
