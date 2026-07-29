@@ -338,7 +338,20 @@ main {
   justify-content: center;
   flex-wrap: wrap;
   gap: 1.25rem;
-  margin-top: 2.5rem;
+}
+
+footer .socials {
+  margin-bottom: 1.5rem;
+}
+
+footer .socials a {
+  width: 42px;
+  height: 42px;
+}
+
+footer .socials svg {
+  width: 19px;
+  height: 19px;
 }
 
 .socials a {
