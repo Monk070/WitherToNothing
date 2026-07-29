@@ -50,8 +50,11 @@ body {
 .header-title-logo {
   max-width: 420px;
   width: 80%;
-  height: auto;
+  aspect-ratio: 4961 / 1765;
   display: inline-block;
+  background-color: #f0ad0e;
+  -webkit-mask: url("Pictures/Wither To Nothing TITLE WHITE PNG.png") no-repeat center / contain;
+  mask: url("Pictures/Wither To Nothing TITLE WHITE PNG.png") no-repeat center / contain;
 }
 
 nav.tabs {
