@@ -90,6 +90,25 @@ nav.tabs a.active {
   border-bottom-color: var(--gold);
 }
 
+nav.tabs a.tab-game {
+  display: flex;
+  align-items: center;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+nav.tabs a.tab-game img {
+  height: 26px;
+  image-rendering: pixelated;
+  opacity: 0.75;
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+
+nav.tabs a.tab-game:hover img {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(240, 173, 14, 0.6));
+}
+
 /* ---------- Main content ---------- */
 
 main {
