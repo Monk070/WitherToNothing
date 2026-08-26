@@ -39,7 +39,7 @@ Shows are stored in `events.json` (repo root); `events.html` fetches it and buil
 event rows client-side, hiding past dates and showing a "coming soon" placeholder when
 the list is empty. The band manages the list from the private Discord server:
 
-- `/event add date venue city [time] [tickets]` — adds a show
+- `/event add title date location [time] [tickets]` — adds a show (location = full address)
 - `/event remove id` — removes a show (ids come from `/event list`)
 - `/event list` — shows what's on the site, including ids and hidden past dates
 

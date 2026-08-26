@@ -97,8 +97,10 @@
             .sort((a, b) => (a.date < b.date ? -1 : 1));
           if (!upcoming.length) return fallback();
           for (const e of upcoming) {
-            row(fmtDate(e.date), e.venue,
-                e.time ? e.city + ' — ' + fmtTime(e.time) : e.city,
+            const title = e.title || e.venue || 'TBA';
+            const loc = e.location || e.city || '';
+            row(fmtDate(e.date), title,
+                e.time ? loc + ' — ' + fmtTime(e.time) : loc,
                 e.tickets ? 'Tickets' : 'Get Notified',
                 e.tickets || '/contact', !!e.tickets);
           }

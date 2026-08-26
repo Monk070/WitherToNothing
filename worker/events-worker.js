@@ -71,8 +71,8 @@ async function addEvent(opts, i, env) {
   if (!iso) {
     return "⚠️ I couldn't read that date. Try `2026-11-14` or `14 Nov 2026`.";
   }
-  const venue = opts.venue.trim();
-  const city = opts.city.trim();
+  const title = opts.title.trim();
+  const location = opts.location.trim();
   const time = normTime(opts.time);
   if (opts.time && !time) {
     return "⚠️ I couldn't read that time. Try `19:30` or `7:30pm`.";
@@ -83,11 +83,11 @@ async function addEvent(opts, i, env) {
   }
   const { sha, data } = await getEvents(env);
   const id = crypto.randomUUID().slice(0, 8);
-  data.events.push({ id, date: iso, venue, city, ...(time && { time }), ...(tickets && { tickets }) });
+  data.events.push({ id, date: iso, title, location, ...(time && { time }), ...(tickets && { tickets }) });
   data.events.sort((a, b) => (a.date < b.date ? -1 : 1));
-  await putEvents(env, sha, data, `Add event: ${venue} ${iso} (${who(i)} via Discord)`);
+  await putEvents(env, sha, data, `Add event: ${title} ${iso} (${who(i)} via Discord)`);
   return (
-    `✅ Added **${venue}, ${city}** — ${fmt(iso)}${time ? ', ' + fmtTime(time) : ''}. ` +
+    `✅ Added **${title}** — ${location} — ${fmt(iso)}${time ? ', ' + fmtTime(time) : ''}. ` +
     `Live on the site in a minute or two. (id: \`${id}\`)`
   );
 }
@@ -100,8 +100,9 @@ async function removeEvent(opts, i, env) {
     return `⚠️ No event with id \`${id}\`. Use \`/event list\` to see the ids.`;
   }
   data.events = data.events.filter((e) => e.id !== id);
-  await putEvents(env, sha, data, `Remove event: ${ev.venue} ${ev.date} (${who(i)} via Discord)`);
-  return `🗑️ Removed **${ev.venue}, ${ev.city}** — ${fmt(ev.date)}. The site updates in a minute or two.`;
+  const label = ev.title || ev.venue || 'event';
+  await putEvents(env, sha, data, `Remove event: ${label} ${ev.date} (${who(i)} via Discord)`);
+  return `🗑️ Removed **${label}** — ${fmt(ev.date)}. The site updates in a minute or two.`;
 }
 
 async function listEvents(env) {
@@ -114,7 +115,7 @@ async function listEvents(env) {
     const past = e.date < today ? ' *(past — hidden on the site)*' : '';
     const tm = e.time ? `, ${fmtTime(e.time)}` : '';
     const tix = e.tickets ? ` — <${e.tickets}>` : '';
-    return `\`${e.id}\` — ${fmt(e.date)}${tm} — **${e.venue}**, ${e.city}${tix}${past}`;
+    return `\`${e.id}\` — ${fmt(e.date)}${tm} — **${e.title || e.venue}** — ${e.location || e.city || ''}${tix}${past}`;
   });
   return '📅 **Shows on the site:**\n' + lines.join('\n');
 }
