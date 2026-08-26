@@ -1,3 +1,11 @@
 {
-  "events": []
+  "events": [
+    {
+      "id": "c5d0a34d",
+      "date": "2026-09-04",
+      "venue": "The Flapper 7:00pm",
+      "city": "Birmingham",
+      "tickets": "https://www.seetickets.com/event/blood-dealer/the-flapper/3640704"
+    }
+  ]
 }
