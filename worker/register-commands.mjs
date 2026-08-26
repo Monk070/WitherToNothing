@@ -31,6 +31,7 @@ const commands = [
           { type: STRING, name: 'date', description: 'e.g. 2026-11-14 or "14 Nov 2026"', required: true },
           { type: STRING, name: 'venue', description: 'Venue name', required: true },
           { type: STRING, name: 'city', description: 'e.g. Camden, London', required: true },
+          { type: STRING, name: 'time', description: 'Start time, e.g. 19:30 or 7:30pm (optional)', required: false },
           { type: STRING, name: 'tickets', description: 'Ticket link (optional)', required: false },
         ],
       },

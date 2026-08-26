@@ -76,6 +76,14 @@
       const fmtDate = (iso) => new Date(iso + 'T00:00:00')
         .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
+      // "19:30" → "7:30pm"
+      function fmtTime(hm) {
+        let [h, m] = hm.split(':').map(Number);
+        const ap = h >= 12 ? 'pm' : 'am';
+        h = h % 12 || 12;
+        return h + (m ? ':' + String(m).padStart(2, '0') : '') + ap;
+      }
+
       fetch('/events.json')
         .then((res) => {
           if (!res.ok) throw new Error();
@@ -89,7 +97,8 @@
             .sort((a, b) => (a.date < b.date ? -1 : 1));
           if (!upcoming.length) return fallback();
           for (const e of upcoming) {
-            row(fmtDate(e.date), e.venue, e.city,
+            row(fmtDate(e.date), e.venue,
+                e.time ? e.city + ' — ' + fmtTime(e.time) : e.city,
                 e.tickets ? 'Tickets' : 'Get Notified',
                 e.tickets || '/contact', !!e.tickets);
           }

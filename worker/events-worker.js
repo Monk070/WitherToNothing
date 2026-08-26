@@ -73,17 +73,21 @@ async function addEvent(opts, i, env) {
   }
   const venue = opts.venue.trim();
   const city = opts.city.trim();
+  const time = normTime(opts.time);
+  if (opts.time && !time) {
+    return "⚠️ I couldn't read that time. Try `19:30` or `7:30pm`.";
+  }
   const tickets = (opts.tickets || '').trim();
   if (tickets && !/^https?:\/\//i.test(tickets)) {
     return '⚠️ The tickets link must start with http:// or https://.';
   }
   const { sha, data } = await getEvents(env);
   const id = crypto.randomUUID().slice(0, 8);
-  data.events.push({ id, date: iso, venue, city, ...(tickets && { tickets }) });
+  data.events.push({ id, date: iso, venue, city, ...(time && { time }), ...(tickets && { tickets }) });
   data.events.sort((a, b) => (a.date < b.date ? -1 : 1));
   await putEvents(env, sha, data, `Add event: ${venue} ${iso} (${who(i)} via Discord)`);
   return (
-    `✅ Added **${venue}, ${city}** — ${fmt(iso)}. ` +
+    `✅ Added **${venue}, ${city}** — ${fmt(iso)}${time ? ', ' + fmtTime(time) : ''}. ` +
     `Live on the site in a minute or two. (id: \`${id}\`)`
   );
 }
@@ -108,8 +112,9 @@ async function listEvents(env) {
   const today = new Date().toISOString().slice(0, 10);
   const lines = data.events.map((e) => {
     const past = e.date < today ? ' *(past — hidden on the site)*' : '';
+    const tm = e.time ? `, ${fmtTime(e.time)}` : '';
     const tix = e.tickets ? ` — <${e.tickets}>` : '';
-    return `\`${e.id}\` — ${fmt(e.date)} — **${e.venue}**, ${e.city}${tix}${past}`;
+    return `\`${e.id}\` — ${fmt(e.date)}${tm} — **${e.venue}**, ${e.city}${tix}${past}`;
   });
   return '📅 **Shows on the site:**\n' + lines.join('\n');
 }
@@ -139,6 +144,32 @@ function parseDate(s) {
   }
   const t = Date.parse(s);
   return isNaN(t) ? null : new Date(t).toISOString().slice(0, 10);
+}
+
+// "19:30", "7.30pm", "7pm" → "19:30" (24-hour storage); null if unreadable.
+function normTime(s) {
+  if (!s) return null;
+  const m = s.trim().toLowerCase().match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?$/);
+  if (!m) return null;
+  let h = +m[1];
+  const min = m[2] ? +m[2] : 0;
+  if (min > 59) return null;
+  if (m[3]) {
+    if (h < 1 || h > 12) return null;
+    if (m[3] === 'pm' && h !== 12) h += 12;
+    if (m[3] === 'am' && h === 12) h = 0;
+  } else if (h > 23) {
+    return null;
+  }
+  return String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+}
+
+// "19:30" → "7:30pm" for Discord replies.
+function fmtTime(hm) {
+  let [h, m] = hm.split(':').map(Number);
+  const ap = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  return h + (m ? ':' + String(m).padStart(2, '0') : '') + ap;
 }
 
 function fmt(iso) {
