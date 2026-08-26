@@ -29,19 +29,73 @@
     <hr class="heading-rule">
     <p class="lead">Catch us live. Upcoming shows will be listed here.</p>
 
-    <div class="event-row">
-      <div class="event-date">TBA</div>
-      <div class="event-info">
-        <h3>Next Show Announcement Coming Soon</h3>
-        <p>Venue &amp; city to be confirmed</p>
-      </div>
-      <a class="btn" href="/contact">Get Notified</a>
-    </div>
+    <div id="event-list"></div>
 
     <p class="lead" style="margin-top: 3rem;">
       Want to book Wither To Nothing for your venue or event?
       <a href="/contact" style="color: #f0ad0e;">Get in touch</a>.
     </p>
+
+    <script>
+      // Shows live in events.json (repo root), managed from the band's
+      // Discord server via /event add|remove|list (worker/events-worker.js).
+      const listEl = document.getElementById('event-list');
+
+      function row(dateText, title, sub, btnText, btnHref, newTab) {
+        const r = document.createElement('div');
+        r.className = 'event-row';
+        const d = document.createElement('div');
+        d.className = 'event-date';
+        d.textContent = dateText;
+        const info = document.createElement('div');
+        info.className = 'event-info';
+        const h = document.createElement('h3');
+        h.textContent = title;
+        const p = document.createElement('p');
+        p.textContent = sub;
+        info.append(h, p);
+        r.append(d, info);
+        const a = document.createElement('a');
+        a.className = 'btn';
+        a.textContent = btnText;
+        a.href = btnHref;
+        if (newTab) {
+          a.target = '_blank';
+          a.rel = 'noopener';
+        }
+        r.append(a);
+        listEl.append(r);
+      }
+
+      function fallback() {
+        listEl.replaceChildren();
+        row('TBA', 'Next Show Announcement Coming Soon',
+            'Venue & city to be confirmed', 'Get Notified', '/contact', false);
+      }
+
+      const fmtDate = (iso) => new Date(iso + 'T00:00:00')
+        .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      fetch('/events.json')
+        .then((res) => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then((data) => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const upcoming = (data.events || [])
+            .filter((e) => new Date(e.date + 'T23:59:59') >= today)
+            .sort((a, b) => (a.date < b.date ? -1 : 1));
+          if (!upcoming.length) return fallback();
+          for (const e of upcoming) {
+            row(fmtDate(e.date), e.venue, e.city,
+                e.tickets ? 'Tickets' : 'Get Notified',
+                e.tickets || '/contact', !!e.tickets);
+          }
+        })
+        .catch(fallback);
+    </script>
   </main>
 
   <footer>
