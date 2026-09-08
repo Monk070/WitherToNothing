@@ -7,6 +7,13 @@
       "location": "The Flapper, Kingston Row, Birmingham, B1 2NU",
       "time": "19:00",
       "tickets": "https://www.seetickets.com/event/blood-dealer/the-flapper/3640704"
+    },
+    {
+      "id": "d0e0f046",
+      "date": "2026-09-15",
+      "title": "Funeral gig",
+      "location": "Your mom's",
+      "time": "21:00"
     }
   ]
 }
