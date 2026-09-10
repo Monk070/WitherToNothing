@@ -180,6 +180,7 @@ function saveBest(){try{localStorage.wtn_best=best;}catch(e){}}
 let P=null,cam=0,maxCam=0,score=0,best=bestStore;
 let shots=[],foes=[],parts=[],texts=[],pickups=[],spawns=[];
 let shake=0,hitstop=0,bossOn=false,boss=null,dawn=0,flash=0;
+let wflash=0,warpSfxT=0;const WARP_T=2.8;
 const rnd=(i)=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);};
 
 function resetGame(){
@@ -187,7 +188,7 @@ function resetGame(){
   P={c,x:40,y:GROUND,vx:0,vy:0,ground:true,air:0,hp:c.hp,inv:0,cd:0,face:1,
      anim:'idle',animT:0,atkT:0};
   cam=0;maxCam=0;score=0;shots=[];foes=[];parts=[];texts=[];pickups=[];
-  shake=0;hitstop=0;bossOn=false;boss=null;dawn=0;flash=0;
+  shake=0;hitstop=0;bossOn=false;boss=null;dawn=0;flash=0;wflash=0;
   spawns=[];
   let i=0;
   for(let x=430;x<2350;x+=118+rnd(i)*70,i++){
@@ -269,11 +270,15 @@ function loop(ts){requestAnimationFrame(loop);
       if(T){keys.ArrowRight=true;keys.KeyX=true;muted=true;
         for(let i=0;i<T*60&&state==='play';i++)update(1/60);
         keys.ArrowRight=false;keys.KeyX=false;muted=false;}}
-    else if(shot==='win'){resetGame();state='win';dawn=1;score=6350;}}
+    else if(shot==='win'){resetGame();state='win';dawn=1;score=6350;}
+    else if(shot==='warp'){resetGame();P.x=WORLD-200;cam=WORLD-W;
+      muted=true;state='win';dawn=0;score=6350;
+      stateT=+(new URLSearchParams(location.search).get('t')||0);}}
     draw();return;}
   if(state==='play')update(dt);
-  if(state==='win'&&dawn<1)dawn=Math.min(1,dawn+dt*.25);
+  if(state==='win')updateWin(dt);
   shake=Math.max(0,shake-dt*2);flash=Math.max(0,flash-dt*3);
+  wflash=Math.max(0,wflash-dt*1.3);
   draw();}
 requestAnimationFrame(loop);
 
@@ -383,9 +388,23 @@ function updateBoss(dt){const b=boss;b.t+=dt;b.animT+=dt;b.modeT+=dt;b.hurtT-=dt
 function winGame(){score+=2000;sfx.win();shake=.6;hitstop=.12;
   burst(boss.x,boss.y+20,['#f0ad0e','#ffd65c','#fff','#60488a'],40);
   foes=[];shots=[];if(score>best){best=score;saveBest();}
-  music.pause();teaser.muted=muted;teaser.currentTime=0;
-  teaser.play().catch(()=>{});
+  music.pause();P.inv=0;warpSfxT=0;
   state='win';stateT=0;dawn=0;}
+
+/* charge-up, then a white-flash teleport to the club; the teaser
+   only starts at the moment of the jump */
+function updateWin(dt){
+  if(dawn>=1)return;
+  const prog=Math.min(1,stateT/WARP_T);
+  warpSfxT-=dt;
+  if(warpSfxT<=0){warpSfxT=.22-prog*.15;
+    tone(150+prog*700,250+prog*1500,.14,'sawtooth',.07+prog*.05);
+    if(Math.random()<.4)tone(600+prog*800,300,.08,'square',.04);}
+  shake=Math.max(shake,prog*.25);
+  if(stateT>=WARP_T){dawn=1;wflash=1.4;shake=.5;
+    tone(1200,100,.5,'sawtooth',.15);noise(.35,.16);sfx.win();
+    teaser.muted=muted;teaser.currentTime=0;
+    teaser.play().catch(()=>{});}}
 
 /* ---------- drawing ---------- */
 function lerpC(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];}
@@ -579,6 +598,8 @@ function draw(){
     if(state==='over')drawOver();
     if(state==='win')drawWin();}
   if(flash>0){ctx.fillStyle=`rgba(236,58,70,${flash*.35})`;ctx.fillRect(0,0,W,H);}
+  if(wflash>0){ctx.fillStyle=`rgba(255,255,255,${Math.min(1,wflash)})`;
+    ctx.fillRect(0,0,W,H);}
   ctx.restore();
   if(location.search.includes('shot='))
     text('SH '+DBG.shots+' HI '+DBG.hits+' KI '+DBG.kills+' HU '+DBG.hurt+
@@ -644,9 +665,34 @@ function drawOver(){
   if((frame/25|0)%2)text('ENTER TO TRY AGAIN',W/2,122,'#fff',2,1);}
 
 function drawWin(){
-  if(dawn<1){/* sun rising over live scene */
-    if(P)drawPlayer();drawParts();
-    text('DAYLIGHT BREAKS...',W/2,60,'#ffd65c',2,1);return;}
+  if(dawn<1){/* teleport charge-up around the player */
+    const prog=Math.min(1,stateT/WARP_T),px=P.x-cam,py=P.y;
+    /* glow pool behind everything */
+    const g=ctx.createRadialGradient(px,py-8,2,px,py-8,26+prog*22);
+    g.addColorStop(0,`rgba(255,255,255,${.12+prog*.3})`);
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=g;ctx.fillRect(px-60,py-70,120,120);
+    /* white circles closing in */
+    for(let i=0;i<3;i++){
+      const ph=(stateT*(1.1+i*.45)+i*.33)%1,r=(1-ph)*(34-prog*12)+4;
+      ctx.strokeStyle=`rgba(255,255,255,${.2+prog*.55})`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(px,py-8,r,0,7);ctx.stroke();}
+    /* sparks spiralling into the player */
+    for(let i=0;i<16;i++){
+      const a=rnd(i*7.3)*6.283+stateT*(.8+prog),
+        d0=30+rnd(i*3.1)*28,
+        dd=d0*(1-((stateT*(.6+rnd(i)*.5)+rnd(i*13))%1));
+      ctx.fillStyle=i%3?'#fff':'#ffd65c';
+      ctx.fillRect(px+Math.cos(a)*dd,py-8+Math.sin(a)*dd,1,1);}
+    /* the player, shaking harder as the charge builds */
+    ctx.save();
+    ctx.translate((Math.random()-.5)*prog*5,(Math.random()-.5)*prog*4);
+    if(P)drawPlayer();
+    ctx.restore();
+    drawParts();
+    if(prog>.15)text('DAYLIGHT BREAKS...',W/2,60,
+      (frame/6|0)%3?'#fff':'#ffd65c',2,1);
+    return;}
   drawClub();
   text('NEW SINGLE',W/2,14,'#b8b8cc',1,1);
   const gl=(frame/4|0)%10===0;
