@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/png" href="../Pictures/Logo - Yellow With No Background.png">
 <title>WITHER TO NOTHING — DAYLIGHT</title>
 <style>
   html,body{margin:0;height:100%;background:#000;overflow:hidden;
-    font-family:monospace;user-select:none;cursor:none}
+    font-family:monospace;user-select:none;cursor:none;touch-action:none}
   #wrap{position:relative;height:100%}
   #c{position:absolute;image-rendering:pixelated}
   #crt{position:absolute;inset:0;pointer-events:none;
@@ -18,11 +19,38 @@
     font-size:22px;line-height:1;text-decoration:none;cursor:pointer;
     background:rgba(0,0,0,.6)}
   #back:hover{background:#f0ad0e;color:#000}
+  /* ---------- mobile touch controls ---------- */
+  #touch{position:fixed;inset:0;pointer-events:none;z-index:20}
+  #stick{position:absolute;left:20px;bottom:20px;width:112px;height:112px;
+    border-radius:50%;background:rgba(255,255,255,.08);
+    border:2px solid rgba(255,255,255,.28);pointer-events:auto;touch-action:none}
+  #knob{position:absolute;left:50%;top:50%;width:46px;height:46px;
+    border-radius:50%;background:rgba(255,255,255,.26);
+    transform:translate(-50%,-50%)}
+  .tbtn{position:absolute;width:64px;height:64px;border-radius:50%;
+    background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.3);
+    color:rgba(255,255,255,.65);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;font-size:18px;line-height:1;
+    pointer-events:auto;touch-action:none}
+  .tbtn span{font-size:8px;letter-spacing:.15em;margin-top:3px}
+  .tbtn.on{background:rgba(255,255,255,.32)}
+  #btnA{right:20px;bottom:58px}
+  #btnB{right:96px;bottom:20px}
+  #rotate{display:none;position:fixed;inset:0;background:#000;color:#f0ad0e;
+    z-index:30;align-items:center;justify-content:center;
+    letter-spacing:.3em;font-size:14px;text-align:center}
+  @media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="c" width="320" height="180"></canvas><div id="crt"></div></div>
 <a id="back" href="/home" aria-label="Back to home">&#8592;</a>
+<div id="touch" hidden>
+  <div id="stick"><div id="knob"></div></div>
+  <div class="tbtn" id="btnA">A<span>JUMP</span></div>
+  <div class="tbtn" id="btnB">B<span>FIRE</span></div>
+</div>
+<div id="rotate">ROTATE YOUR PHONE&nbsp;&#8635;</div>
 <audio id="music" src="Daylight (8-Bit Chiptune Mix).mp3" loop preload="auto"></audio>
 <audio id="teaser" src="../Daylight Teaser.mp3" preload="auto"></audio>
 <script src="sprites.js"></script>
@@ -165,6 +193,43 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>keys[e.code]=false);
 const L=()=>keys.ArrowLeft||keys.KeyA,R_=()=>keys.ArrowRight||keys.KeyD;
 
+/* ---------- mobile touch controls ---------- */
+const TOUCH=matchMedia('(pointer: coarse)').matches||'ontouchstart' in window
+  ||location.search.includes('touch=1');
+if(TOUCH){
+  document.getElementById('touch').hidden=false;
+  const stick=document.getElementById('stick'),
+    knob=document.getElementById('knob');
+  let stickId=null;
+  const setDir=(d)=>{
+    const was=keys.ArrowLeft?-1:(keys.ArrowRight?1:0);
+    if(d===was)return;
+    keys.ArrowLeft=d<0;keys.ArrowRight=d>0;
+    if(d<0)press('ArrowLeft');else if(d>0)press('ArrowRight');};
+  const stickMove=(t)=>{
+    const r=stick.getBoundingClientRect(),dx=t.clientX-(r.left+r.width/2),
+      dead=r.width*.12,max=r.width/2-18;
+    setDir(dx<-dead?-1:(dx>dead?1:0));
+    const cl=Math.max(-max,Math.min(max,dx));
+    knob.style.transform=`translate(calc(-50% + ${cl}px),-50%)`;};
+  stick.addEventListener('touchstart',e=>{e.preventDefault();
+    const t=e.changedTouches[0];stickId=t.identifier;stickMove(t);},{passive:false});
+  stick.addEventListener('touchmove',e=>{e.preventDefault();
+    for(const t of e.changedTouches)if(t.identifier===stickId)stickMove(t);},{passive:false});
+  const stickEnd=e=>{e.preventDefault();
+    for(const t of e.changedTouches)if(t.identifier===stickId){stickId=null;
+      setDir(0);knob.style.transform='translate(-50%,-50%)';}};
+  stick.addEventListener('touchend',stickEnd,{passive:false});
+  stick.addEventListener('touchcancel',stickEnd,{passive:false});
+  const bindBtn=(id,code)=>{const el=document.getElementById(id);
+    el.addEventListener('touchstart',e=>{e.preventDefault();
+      el.classList.add('on');if(!keys[code])press(code);keys[code]=true;},{passive:false});
+    const up=e=>{e.preventDefault();el.classList.remove('on');keys[code]=false;};
+    el.addEventListener('touchend',up,{passive:false});
+    el.addEventListener('touchcancel',up,{passive:false});};
+  bindBtn('btnA','Space');
+  bindBtn('btnB','KeyX');}
+
 /* ---------- character roster ---------- */
 const ROSTER=[
  {key:'dom',    spd:74,rate:.48,dmg:2,proj:'ring', pspd:135,pierce:true, hp:3},
@@ -221,7 +286,7 @@ function press(code){
     if(code==='KeyX'||code==='KeyJ'||code==='KeyZ')tryShoot();
     return;}
   if(state==='pause'&&code==='KeyP'){state='play';return;}
-  if((state==='over'||state==='win')&&(code==='Enter'||code==='KeyR')){
+  if((state==='over'||state==='win')&&(code==='Enter'||code==='KeyR'||code==='Space')){
     teaser.pause();music.play().catch(()=>{});
     state='select';stateT=0;return;}}
 
@@ -631,9 +696,9 @@ function drawTitle(){
   text('D A Y L I G H T',W/2+(gl?2:0),104,gl?'#fff':'#ffd65c',2,1);
   glyphLine(W/2,120,'HAS SWALLOWED THE CITY.',2,'#b8b8cc');
   text('PLAY LOUD. BRING THE DAWN.',W/2,131,'#b8b8cc',2,1);
-  if((frame/25|0)%2)text('PRESS ENTER',W/2,145,'#fff',2,1);
+  if((frame/25|0)%2)text(TOUCH?'TAP A TO START':'PRESS ENTER',W/2,145,'#fff',2,1);
   if(best)text('BEST '+best,W/2,160,'#8a8aa0',2,1);
-  text('M:MUTE',4,H-8,'#55556a');}
+  if(!TOUCH)text('M:MUTE',4,H-8,'#55556a');}
 
 function drawSelect(){
   dim(.62);
@@ -655,15 +720,16 @@ function drawSelect(){
     text(b[0],bx,151,'#8a8aa0');
     ctx.fillStyle='#26263a';ctx.fillRect(bx+20,151,24,4);
     ctx.fillStyle='#f0ad0e';ctx.fillRect(bx+20,151,24*Math.max(.15,Math.min(1,b[1])),4);});
-  if((frame/25|0)%2)text('ENTER TO ROCK',W/2,163,'#fff',1,1);
-  text('ARROWS:MOVE  Z/X:ATTACK  SPACE:JUMP X2',W/2,175,'#55556a',1,1);}
+  if((frame/25|0)%2)text(TOUCH?'A TO ROCK':'ENTER TO ROCK',W/2,163,'#fff',1,1);
+  text(TOUCH?'STICK:MOVE  B:ATTACK  A:JUMP X2'
+    :'ARROWS:MOVE  Z/X:ATTACK  SPACE:JUMP X2',W/2,175,'#55556a',1,1);}
 
 function drawOver(){
   dim(.6);
   glyphLine(W/2,66,'TAKES YOU...',2,'#ec3a46');
   text('SCORE '+score,W/2,92,'#fff',1,1);
   if(score>=best&&score>0)text('NEW BEST!',W/2,102,'#f0ad0e',1,1);
-  if((frame/25|0)%2)text('ENTER TO TRY AGAIN',W/2,122,'#fff',2,1);}
+  if((frame/25|0)%2)text(TOUCH?'A TO TRY AGAIN':'ENTER TO TRY AGAIN',W/2,122,'#fff',2,1);}
 
 function drawWin(){
   if(dawn<1){/* teleport charge-up around the player */
@@ -700,7 +766,7 @@ function drawWin(){
   text('DAYLIGHT',W/2+(gl?1:0),23,gl?'#fff':'#f0ad0e',2,1);
   text('OUT NOW',W/2,40,'#fff',2,1);
   text('SCORE '+score+(score>=best?'  NEW BEST!':''),W/2,163,'#f0ad0e',1,1);
-  if((frame/25|0)%2)text('ENTER: PLAY AGAIN',W/2,173,'#fff',1,1);}
+  if((frame/25|0)%2)text(TOUCH?'A: PLAY AGAIN':'ENTER: PLAY AGAIN',W/2,173,'#fff',1,1);}
 
 /* ---------- the band on stage, inside the club ---------- */
 function stageShadow(x,y,w){ctx.fillStyle='rgba(0,0,0,.4)';
