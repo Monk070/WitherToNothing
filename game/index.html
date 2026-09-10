@@ -47,8 +47,8 @@
 <a id="back" href="/home" aria-label="Back to home">&#8592;</a>
 <div id="touch" hidden>
   <div id="stick"><div id="knob"></div></div>
-  <div class="tbtn" id="btnA">A<span>JUMP</span></div>
-  <div class="tbtn" id="btnB">B<span>FIRE</span></div>
+  <div class="tbtn" id="btnA">A<span>FIRE</span></div>
+  <div class="tbtn" id="btnB">B<span>JUMP</span></div>
 </div>
 <div id="rotate">ROTATE YOUR PHONE&nbsp;&#8635;</div>
 <audio id="music" src="Daylight (8-Bit Chiptune Mix).mp3" loop preload="auto"></audio>
@@ -227,8 +227,22 @@ if(TOUCH){
     const up=e=>{e.preventDefault();el.classList.remove('on');keys[code]=false;};
     el.addEventListener('touchend',up,{passive:false});
     el.addEventListener('touchcancel',up,{passive:false});};
-  bindBtn('btnA','Space');
-  bindBtn('btnB','KeyX');}
+  bindBtn('btnA','KeyX');
+  bindBtn('btnB','Space');
+  /* swipe up anywhere on the game to go fullscreen */
+  let swX=null,swY=null;
+  addEventListener('touchstart',e=>{
+    if(e.target.closest&&e.target.closest('#stick,.tbtn,#back'))return;
+    swX=e.changedTouches[0].clientX;swY=e.changedTouches[0].clientY;},{passive:true});
+  addEventListener('touchend',e=>{
+    if(swY===null)return;
+    const dx=e.changedTouches[0].clientX-swX,dy=e.changedTouches[0].clientY-swY;
+    swX=swY=null;
+    if(dy<-60&&Math.abs(dy)>Math.abs(dx)*1.5){
+      const el=document.documentElement;
+      try{const p=el.requestFullscreen?el.requestFullscreen()
+        :(el.webkitRequestFullscreen&&el.webkitRequestFullscreen());
+        if(p&&p.catch)p.catch(()=>{});}catch(err){}}},{passive:true});}
 
 /* ---------- character roster ---------- */
 const ROSTER=[
@@ -269,12 +283,13 @@ function resetGame(){
 function press(code){
   if(state==='boot')return;
   if(code==='KeyM'){muted=!muted;music.muted=muted;teaser.muted=muted;return;}
-  if(state==='title'&&(code==='Enter'||code==='Space')){
+  if(state==='title'&&(code==='Enter'||code==='Space'||(TOUCH&&code==='KeyX'))){
     ac();music.play().catch(()=>{});state='select';stateT=0;sfx.pickup();return;}
   if(state==='select'){
     if(code==='ArrowLeft'||code==='KeyA'){sel=(sel+ROSTER.length-1)%ROSTER.length;tone(440,440,.05);}
     if(code==='ArrowRight'||code==='KeyD'){sel=(sel+1)%ROSTER.length;tone(440,440,.05);}
-    if(code==='Enter'||code==='Space'){resetGame();state='play';stateT=0;sfx.win();
+    if(code==='Enter'||code==='Space'||(TOUCH&&code==='KeyX')){
+      resetGame();state='play';stateT=0;sfx.win();
       music.play().catch(()=>{});}
     return;}
   if(state==='play'){
@@ -286,7 +301,8 @@ function press(code){
     if(code==='KeyX'||code==='KeyJ'||code==='KeyZ')tryShoot();
     return;}
   if(state==='pause'&&code==='KeyP'){state='play';return;}
-  if((state==='over'||state==='win')&&(code==='Enter'||code==='KeyR'||code==='Space')){
+  if((state==='over'||state==='win')&&(code==='Enter'||code==='KeyR'||code==='Space'
+      ||(TOUCH&&code==='KeyX'))){
     teaser.pause();music.play().catch(()=>{});
     state='select';stateT=0;return;}}
 
@@ -698,7 +714,9 @@ function drawTitle(){
   text('PLAY LOUD. BRING THE DAWN.',W/2,131,'#b8b8cc',2,1);
   if((frame/25|0)%2)text(TOUCH?'TAP A TO START':'PRESS ENTER',W/2,145,'#fff',2,1);
   if(best)text('BEST '+best,W/2,160,'#8a8aa0',2,1);
-  if(!TOUCH)text('M:MUTE',4,H-8,'#55556a');}
+  if(!TOUCH)text('M:MUTE',4,H-8,'#55556a');
+  else if(!document.fullscreenElement)
+    text('SWIPE UP: FULLSCREEN',4,H-8,'#55556a');}
 
 function drawSelect(){
   dim(.62);
@@ -721,7 +739,7 @@ function drawSelect(){
     ctx.fillStyle='#26263a';ctx.fillRect(bx+20,151,24,4);
     ctx.fillStyle='#f0ad0e';ctx.fillRect(bx+20,151,24*Math.max(.15,Math.min(1,b[1])),4);});
   if((frame/25|0)%2)text(TOUCH?'A TO ROCK':'ENTER TO ROCK',W/2,163,'#fff',1,1);
-  text(TOUCH?'STICK:MOVE  B:ATTACK  A:JUMP X2'
+  text(TOUCH?'STICK:MOVE  A:ATTACK  B:JUMP X2'
     :'ARROWS:MOVE  Z/X:ATTACK  SPACE:JUMP X2',W/2,175,'#55556a',1,1);}
 
 function drawOver(){
