@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unnamed</title>
+<style>
+  :root { --bg: #050203; --red: #b3121a; --red2: #5a0409; --red3: #ff2a33; }
+  :root:not([data-theme="light"]) { --bg: #050203; }
+  :root[data-theme="dark"] { --bg: #050203; }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(() => {
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W, H, dpr;
+
+  // ---- seeded random so the "word" is stable across reloads ----
+  let seed = 0x5EED;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const R = (a, b) => a + rnd() * (b - a);
+
+  // ---- invented script: each glyph is a stem + hooks/bows/tails/dots ----
+  function makeGlyph() {
+    const parts = [];
+    const stemH = R(0.7, 1.15);
+    const stemX = R(-0.15, 0.15);
+    parts.push({ t: 'line', x1: stemX, y1: -stemH, x2: stemX, y2: stemH * R(0.3, 1) });
+    const n = 1 + Math.floor(rnd() * 3);
+    for (let i = 0; i < n; i++) {
+      const k = rnd();
+      const y = R(-stemH, stemH * 0.4);
+      const dir = rnd() < 0.5 ? -1 : 1;
+      if (k < 0.4) parts.push({ t: 'arc', cx: stemX + dir * 0.32, cy: y, r: R(0.2, 0.4), a0: R(0, Math.PI), a1: R(Math.PI, Math.PI * 2.4), dir });
+      else if (k < 0.7) parts.push({ t: 'line', x1: stemX, y1: y, x2: stemX + dir * R(0.35, 0.7), y2: y + R(-0.4, 0.5) });
+      else parts.push({ t: 'curve', x1: stemX, y1: y, cx: stemX + dir * R(0.5, 0.9), cy: y + R(-0.3, 0.6), x2: stemX + dir * R(0.1, 0.5), y2: y + R(0.4, 1.1) });
+    }
+    if (rnd() < 0.6) parts.push({ t: 'dot', x: R(-0.4, 0.4), y: -stemH - R(0.25, 0.5) });
+    if (rnd() < 0.35) parts.push({ t: 'line', x1: -0.5, y1: -stemH - 0.15, x2: 0.5, y2: -stemH - 0.15 });
+    return parts;
+  }
+  const word = Array.from({ length: 7 }, makeGlyph);
+
+  let target = ctx;
+  function drawGlyph(g, x, y, s, color, lw) {
+    const c = target;
+    c.save(); c.translate(x, y); c.scale(s, s);
+    c.strokeStyle = color; c.fillStyle = color;
+    c.lineWidth = lw / s; c.lineCap = 'round'; c.lineJoin = 'round';
+    for (const p of g) {
+      c.beginPath();
+      if (p.t === 'line') { c.moveTo(p.x1, p.y1); c.lineTo(p.x2, p.y2); c.stroke(); }
+      else if (p.t === 'arc') { c.arc(p.cx, p.cy, p.r, p.a0, p.a1, p.dir < 0); c.stroke(); }
+      else if (p.t === 'curve') { c.moveTo(p.x1, p.y1); c.quadraticCurveTo(p.cx, p.cy, p.x2, p.y2); c.stroke(); }
+      else if (p.t === 'dot') { c.arc(p.x, p.y, 0.09, 0, Math.PI * 2); c.fill(); }
+    }
+    c.restore();
+  }
+
+  // offscreen render of the whole word in white, then colorise/glitch that image
+  const off = document.createElement('canvas');
+  const octx = off.getContext('2d');
+  function renderWord(jitter) {
+    off.width = W * dpr; off.height = H * dpr;
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.clearRect(0, 0, W, H);
+    const s = Math.min(W / 14, H / 4.2);
+    const gap = s * 1.6;
+    const x0 = W / 2 - gap * (word.length - 1) / 2;
+    target = octx;
+    for (let i = 0; i < word.length; i++) {
+      const jx = jitter ? (Math.random() - 0.5) * s * 0.15 : 0;
+      const jy = jitter ? (Math.random() - 0.5) * s * 0.1 : 0;
+      drawGlyph(word[i], x0 + gap * i + jx, H / 2 + jy, s, '#ffffff', s * 0.11);
+    }
+    target = ctx;
+  }
+
+  // draw offscreen white word as a colored layer via a temp canvas
+  const layer = document.createElement('canvas');
+  const lctx = layer.getContext('2d');
+  function colorLayer(color, alpha, dx, dy) {
+    layer.width = W * dpr; layer.height = H * dpr;
+    lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    lctx.clearRect(0, 0, W, H);
+    lctx.drawImage(off, 0, 0, W, H);
+    lctx.globalCompositeOperation = 'source-in';
+    lctx.fillStyle = color; lctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalAlpha = alpha; ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(layer, dx, dy, W, H); ctx.restore();
+  }
+
+  let t = 0, burst = 0;
+  function frame() {
+    t++;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#050203';
+    ctx.fillRect(0, 0, W, H);
+
+    if (!reduce && Math.random() < 0.03) burst = 6 + Math.floor(Math.random() * 10);
+    const glitching = burst > 0; if (glitching) burst--;
+    if (reduce) { renderWord(false); colorLayer('#b3121a', 1, 0, 0); return; }
+
+    renderWord(glitching && Math.random() < 0.5);
+
+    // breathing glow
+    const pulse = 0.55 + 0.25 * Math.sin(t / 40);
+    ctx.save(); ctx.filter = 'blur(18px)'; colorLayer('#7a0810', pulse, 0, 0); ctx.restore();
+
+    // chromatic split
+    const split = glitching ? 4 + Math.random() * 14 : 1.5;
+    colorLayer('#5a0409', 0.9, -split, 0);
+    colorLayer('#ff2a33', 0.6, split, 0);
+    colorLayer('#b3121a', glitching && Math.random() < 0.25 ? 0.3 : 1, 0, 0);
+
+    // horizontal slice tearing
+    const slices = glitching ? 5 + Math.floor(Math.random() * 8) : (Math.random() < 0.08 ? 1 : 0);
+    for (let i = 0; i < slices; i++) {
+      const y = Math.random() * H, h = 4 + Math.random() * H * 0.08;
+      const dx = (Math.random() - 0.5) * (glitching ? 90 : 20);
+      const img = ctx.getImageData(0, y * dpr, W * dpr, h * dpr);
+      ctx.putImageData(img, dx * dpr, y * dpr);
+      if (Math.random() < 0.4) { ctx.fillStyle = 'rgba(179,18,26,0.12)'; ctx.fillRect(0, y, W, h); }
+    }
+
+    // scanline noise + occasional blackout band
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    for (let y = (t % 3); y < H; y += 3) ctx.fillRect(0, y, W, 1);
+    if (glitching && Math.random() < 0.3) { ctx.fillStyle = '#050203'; ctx.fillRect(0, Math.random() * H, W, 2 + Math.random() * 10); }
+
+    // vignette
+    const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.7);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.75)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  }
+  addEventListener('resize', () => { resize(); if (reduce) frame(); });
+  resize(); frame();
+})();
+</script>
+</body>
+</html>

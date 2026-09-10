@@ -23,6 +23,7 @@
 <div id="wrap"><canvas id="c" width="320" height="180"></canvas><div id="crt"></div></div>
 <a id="back" href="/home" aria-label="Back to home">&#8592;</a>
 <audio id="music" src="Daylight (8-Bit Chiptune Mix).mp3" loop preload="auto"></audio>
+<audio id="teaser" src="../Daylight Teaser.mp3" preload="auto"></audio>
 <script src="sprites.js"></script>
 <script>
 'use strict';
@@ -36,6 +37,7 @@ const MCTX=ctx,bgc=document.createElement('canvas');
 bgc.width=W;bgc.height=H;const BCTX=bgc.getContext('2d');
 BCTX.imageSmoothingEnabled=false;
 const music=document.getElementById('music');music.volume=.55;
+const teaser=document.getElementById('teaser');teaser.volume=.8;
 
 /* ---------- responsive integer scaling ---------- */
 function fit(){const dpr=devicePixelRatio||1,
@@ -92,6 +94,38 @@ function text(s,x,y,col,sc=1,align=0){s=(''+s).toUpperCase();
     for(let i=0;i<15;i++)if(g[i]==='1')
       ctx.fillRect(x+(i%3)*sc,y+((i/3)|0)*sc,sc,sc);
     x+=4*sc;}}
+
+/* ---------- the monster's unspeakable name ----------
+   seven glyphs of an invented script, seeded like glitch-name.html so the
+   "word" is stable, drawn in red with chromatic split + glitch bursts */
+let gseed=0x5EED;
+const grnd=()=>{gseed=(gseed*1664525+1013904223)>>>0;return gseed/4294967296;};
+const GLYPHS=Array.from({length:7},()=>{
+  const g=Array(15).fill('0'),stem=(grnd()*3)|0,
+    top=(grnd()*2)|0,bot=3+((grnd()*2)|0);
+  for(let r=top;r<=Math.min(bot,4);r++)g[r*3+stem]='1';
+  const n=2+((grnd()*3)|0);
+  for(let i=0;i<n;i++)g[((grnd()*5)|0)*3+((grnd()*3)|0)]='1';
+  return g.join('');});
+function glyphs(x,y,sc=1,align=0){
+  const w=GLYPHS.length*4*sc-sc;
+  if(align===1)x-=w/2;if(align===2)x-=w;
+  x=Math.round(x);y=Math.round(y);
+  const gburst=(frame%113)<7||(frame%59)<2;
+  const layer=(col,dx,jit)=>{ctx.fillStyle=col;let px=x+dx;
+    for(const g of GLYPHS){
+      const jx=jit?((Math.random()*3)|0)-1:0,jy=jit?((Math.random()*3)|0)-1:0;
+      for(let i=0;i<15;i++)if(g[i]==='1')
+        ctx.fillRect(px+jx+(i%3)*sc,y+jy+((i/3)|0)*sc,sc,sc);
+      px+=4*sc;}};
+  layer('#5a0409',gburst?-2:-1,false);
+  layer('#ff2a33',gburst?2:1,gburst);
+  if(!(gburst&&Math.random()<.3))layer('#b3121a',0,gburst);
+  return w;}
+function glyphLine(x,y,after,sc,col){
+  const gw=GLYPHS.length*4*sc-sc,tw=after.length*4*sc-sc,
+    x0=x-(gw+3*sc+tw)/2;
+  glyphs(x0,y,sc,0);text(after,x0+gw+3*sc,y,col,sc,0);}
 
 /* ---------- chip SFX synth ---------- */
 let AC=null,muted=false;
@@ -167,7 +201,7 @@ function resetGame(){
 /* ---------- state transitions ---------- */
 function press(code){
   if(state==='boot')return;
-  if(code==='KeyM'){muted=!muted;music.muted=muted;return;}
+  if(code==='KeyM'){muted=!muted;music.muted=muted;teaser.muted=muted;return;}
   if(state==='title'&&(code==='Enter'||code==='Space')){
     ac();music.play().catch(()=>{});state='select';stateT=0;sfx.pickup();return;}
   if(state==='select'){
@@ -186,6 +220,7 @@ function press(code){
     return;}
   if(state==='pause'&&code==='KeyP'){state='play';return;}
   if((state==='over'||state==='win')&&(code==='Enter'||code==='KeyR')){
+    teaser.pause();music.play().catch(()=>{});
     state='select';stateT=0;return;}}
 
 /* ---------- shooting ---------- */
@@ -348,6 +383,8 @@ function updateBoss(dt){const b=boss;b.t+=dt;b.animT+=dt;b.modeT+=dt;b.hurtT-=dt
 function winGame(){score+=2000;sfx.win();shake=.6;hitstop=.12;
   burst(boss.x,boss.y+20,['#f0ad0e','#ffd65c','#fff','#60488a'],40);
   foes=[];shots=[];if(score>best){best=score;saveBest();}
+  music.pause();teaser.muted=muted;teaser.currentTime=0;
+  teaser.play().catch(()=>{});
   state='win';stateT=0;dawn=0;}
 
 /* ---------- drawing ---------- */
@@ -518,7 +555,7 @@ function drawHUD(){
   ctx.fillStyle='#f0ad0e';ctx.fillRect(60,H-7,200*pr,2);
   text('☀',263,H-9,'#ffd65c');
   if(boss&&!boss.dead){
-    text('THE SILENCE',W/2,H-20,'#ec3a46',1,1);
+    glyphs(W/2,H-20,1,1);
     ctx.fillStyle='#0d0d14';ctx.fillRect(60,H-13,200,4);
     ctx.fillStyle='#ec3a46';ctx.fillRect(61,H-12,198*Math.max(0,boss.hp/boss.maxhp),2);}}
 
@@ -570,7 +607,7 @@ function drawTitle(){
   text('in',W/2,97,'#8a8aa0',1,1);
   const gl=(frame/4|0)%14===0;
   text('D A Y L I G H T',W/2+(gl?2:0),104,gl?'#fff':'#ffd65c',2,1);
-  text('THE SILENCE HAS SWALLOWED THE CITY.',W/2,120,'#b8b8cc',2,1);
+  glyphLine(W/2,120,'HAS SWALLOWED THE CITY.',2,'#b8b8cc');
   text('PLAY LOUD. BRING THE DAWN.',W/2,131,'#b8b8cc',2,1);
   if((frame/25|0)%2)text('PRESS ENTER',W/2,145,'#fff',2,1);
   if(best)text('BEST '+best,W/2,160,'#8a8aa0',2,1);
@@ -601,7 +638,7 @@ function drawSelect(){
 
 function drawOver(){
   dim(.6);
-  text('THE SILENCE TAKES YOU...',W/2,66,'#ec3a46',2,1);
+  glyphLine(W/2,66,'TAKES YOU...',2,'#ec3a46');
   text('SCORE '+score,W/2,92,'#fff',1,1);
   if(score>=best&&score>0)text('NEW BEST!',W/2,102,'#f0ad0e',1,1);
   if((frame/25|0)%2)text('ENTER TO TRY AGAIN',W/2,122,'#fff',2,1);}
@@ -610,18 +647,86 @@ function drawWin(){
   if(dawn<1){/* sun rising over live scene */
     if(P)drawPlayer();drawParts();
     text('DAYLIGHT BREAKS...',W/2,60,'#ffd65c',2,1);return;}
-  dim(.25);
-  if(logoMarq)ctx.drawImage(logoMarq,W/2-logoMarq.width,20,logoMarq.width*2,logoMarq.height*2);
-  else{const big=SP.misc.sigil_big[0];
-    ctx.drawImage(big,W/2-big.width,20,big.width*2,big.height*2);}
-  text('YOU BROUGHT THE DAWN',W/2,62,'#fff',1,1);
-  text('WITHER TO NOTHING',W/2,80,'#f0ad0e',2,1);
-  text('NEW SINGLE',W/2,100,'#b8b8cc',1,1);
+  drawClub();
+  text('NEW SINGLE',W/2,14,'#b8b8cc',1,1);
   const gl=(frame/4|0)%10===0;
-  text("'DAYLIGHT'",W/2+(gl?1:0),110,gl?'#fff':'#ffd65c',2,1);
-  text('OUT NOW',W/2,128,'#fff',1,1);
-  text('SCORE '+score+(score>=best?'  NEW BEST!':''),W/2,146,'#f0ad0e',1,1);
-  if((frame/25|0)%2)text('ENTER: PLAY AGAIN',W/2,162,'#b8b8cc',1,1);}
+  text('DAYLIGHT',W/2+(gl?1:0),23,gl?'#fff':'#f0ad0e',2,1);
+  text('OUT NOW',W/2,40,'#fff',2,1);
+  text('SCORE '+score+(score>=best?'  NEW BEST!':''),W/2,163,'#f0ad0e',1,1);
+  if((frame/25|0)%2)text('ENTER: PLAY AGAIN',W/2,173,'#fff',1,1);}
+
+/* ---------- the band on stage, inside the club ---------- */
+function stageShadow(x,y,w){ctx.fillStyle='rgba(0,0,0,.4)';
+  ctx.beginPath();ctx.ellipse(x,y+1,w,2,0,0,7);ctx.fill();}
+function perfFrame(k,ph,fast){const ch=SP.chars[k];
+  return ((frame/(fast?6:10)|0)+ph)%2?ch.attack[0]:ch.idle[((frame/14|0)+ph)%2];}
+function drawAmp(x,y){ctx.fillStyle='#12101c';ctx.fillRect(x,y-22,20,22);
+  ctx.fillStyle='#1e1a2c';ctx.fillRect(x+2,y-20,16,10);
+  for(let i=0;i<4;i++){ctx.fillStyle='#0a0814';ctx.fillRect(x+3+i*4,y-19,2,8);}
+  ctx.fillStyle='#f0ad0e';ctx.fillRect(x+2,y-8,16,1);}
+function drawKit(x,y){
+  ctx.fillStyle='#5a5a6e';ctx.fillRect(x-15,y-18,1,18);ctx.fillRect(x+14,y-18,1,18);
+  const cb=(frame/6|0)%2;/* cymbals bounce with the beat */
+  ctx.fillStyle='#ffd65c';ctx.fillRect(x-19,y-19+cb,9,2);ctx.fillRect(x+10,y-19+(1-cb),9,2);
+  ctx.fillStyle='#26202e';ctx.fillRect(x-8,y-14,7,6);ctx.fillRect(x+1,y-14,7,6);
+  ctx.fillStyle='#f0ad0e';ctx.fillRect(x-8,y-14,7,1);ctx.fillRect(x+1,y-14,7,1);
+  ctx.fillStyle='#171422';ctx.beginPath();ctx.arc(x,y-6,7,0,7);ctx.fill();
+  ctx.strokeStyle='#f0ad0e';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-6,7,0,7);ctx.stroke();
+  ctx.drawImage(SP.misc.sigil[0],x-4,y-10);}
+function drawBeam(sx,tx,ty){
+  const a=.09*(0.7+0.3*Math.sin(frame*.07+sx));
+  ctx.fillStyle=`rgba(255,214,92,${a})`;
+  ctx.beginPath();ctx.moveTo(sx-3,5);ctx.lineTo(sx+3,5);
+  ctx.lineTo(tx+16,ty);ctx.lineTo(tx-16,ty);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#1c1c2a';ctx.fillRect(sx-4,0,8,5);
+  ctx.fillStyle='#ffd65c';ctx.fillRect(sx-2,5,4,2);}
+function drawClub(){
+  /* room + back wall */
+  ctx.fillStyle='#07050c';ctx.fillRect(0,0,W,H);
+  for(let i=0;i<14;i++){ctx.fillStyle=i%2?'#0d0a16':'#0b0812';
+    ctx.fillRect(i*24,0,24,120);}
+  const wg=ctx.createRadialGradient(W/2,92,10,W/2,92,150);
+  wg.addColorStop(0,'rgba(240,173,14,.10)');wg.addColorStop(1,'rgba(240,173,14,0)');
+  ctx.fillStyle=wg;ctx.fillRect(0,0,W,146);
+  /* backdrop banner */
+  ctx.fillStyle='#0e0e16';ctx.fillRect(W/2-40,56,80,34);
+  ctx.fillStyle='#f0ad0e';ctx.fillRect(W/2-40,56,80,1);ctx.fillRect(W/2-40,89,80,1);
+  if(logoMarq)ctx.drawImage(logoMarq,W/2-9,59,18,18);
+  else ctx.drawImage(SP.misc.sigil_big[0],W/2-12,60);
+  text('WITHER TO NOTHING',W/2,80,'#f0ad0e',1,1);
+  /* stage */
+  ctx.fillStyle='#141020';ctx.fillRect(0,120,W,26);
+  ctx.fillStyle='#1c1630';ctx.fillRect(0,120,W,2);
+  ctx.fillStyle='#0d0a16';ctx.fillRect(0,146,W,12);
+  ctx.fillStyle='#f0ad0e';ctx.fillRect(0,146,W,1);
+  drawAmp(30,144);drawAmp(270,144);
+  /* spotlights onto the band */
+  drawBeam(76,76,134);drawBeam(160,160,120);drawBeam(244,244,134);
+  drawBeam(120,134,144);drawBeam(200,186,144);
+  /* Dan on the drums at the back */
+  stageShadow(W/2,118,10);
+  drawSprite(perfFrame('dan',0,true),W/2,118,false,2);
+  drawKit(W/2,120);
+  /* Scott and Sabrina at the sides */
+  stageShadow(76,134,8);drawSprite(perfFrame('scott',1,false),76,134,false,2);
+  stageShadow(244,134,8);drawSprite(perfFrame('sabrina',2,false),244,134,true,2);
+  /* Dom and Elliot out front */
+  stageShadow(134,144,8);drawSprite(perfFrame('dom',3,false),134,144,false,2);
+  stageShadow(186,144,8);drawSprite(perfFrame('elliot',1,false),186,144,true,2);
+  /* gold sparkles in the air */
+  for(let i=0;i<8;i++){
+    if(Math.sin(frame*.1+i*2.1)<.3)continue;
+    const sx=(rnd(i+400)*W+frame*(.3+rnd(i)*.4))%W,sy=48+rnd(i+50)*60;
+    ctx.fillStyle=i%2?'#ffd65c':'#f0ad0e';ctx.fillRect(sx,sy,1,1);}
+  /* crowd in front of the stage */
+  for(let i=0;i<26;i++){
+    const row=i%2,cx2=i*13-6+(i%3)*3,
+      cy=(row?166:157)+Math.sin(frame*.09+i*1.7)*2;
+    ctx.fillStyle=row?'#04030a':'#0b0716';
+    ctx.fillRect(cx2,cy,7,7);
+    ctx.fillRect(cx2-2,cy+6,11,H-cy);
+    if(i%4===1){ctx.fillRect(cx2+8,cy-4,2,8);
+      ctx.fillRect(cx2+7,cy-6,1,3);ctx.fillRect(cx2+10,cy-6,1,3);}}}
 </script>
 </body>
 </html>
