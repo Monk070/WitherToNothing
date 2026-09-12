@@ -251,6 +251,56 @@ main {
   margin-top: 1rem;
 }
 
+/* ---------- Merch product cards ---------- */
+
+.merch-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 400px));
+  justify-content: center;
+}
+
+.card .product-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 1px solid #222;
+  margin-bottom: 0.75rem;
+}
+
+.card .thumbs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.card .thumbs img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 1px solid #2a2a2a;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.25s ease, border-color 0.25s ease;
+}
+
+.card .thumbs img:hover {
+  opacity: 1;
+}
+
+.card .thumbs img.active {
+  border-color: var(--gold);
+  opacity: 1;
+}
+
+.merch-note {
+  text-align: center;
+  color: #777;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 2.5rem;
+}
+
 /* ---------- Buttons ---------- */
 
 .btn {

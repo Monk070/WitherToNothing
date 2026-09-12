@@ -29,29 +29,35 @@
     <hr class="heading-rule">
     <p class="lead">Wear the signs. Official Wither To Nothing merchandise.</p>
 
-    <div class="card-grid">
+    <div class="card-grid merch-grid">
       <div class="card">
-        <h3>Logo Tee</h3>
-        <p class="meta">T-Shirt &mdash; Black</p>
-        <p>Classic black tee featuring the gold Wither To Nothing sigil on the chest.</p>
-        <p class="price">Coming Soon</p>
-        <a class="btn" href="/contact">Enquire</a>
+        <img class="product-photo" src="Pictures/Merch/bundle-box-1.jpg" alt="Open black wooden bundle box showing the sigil sticker, guitar pick, pin badge and keyring">
+        <div class="thumbs">
+          <img src="Pictures/Merch/bundle-box-1.jpg" class="active" alt="Bundle box open, showing the contents">
+          <img src="Pictures/Merch/bundle-box-2.jpg" alt="Bundle box lid with the gold sigil">
+          <img src="Pictures/Merch/bundle-box-3.jpg" alt="Bundle box contents laid out inside the box">
+        </div>
+        <h3>Bundle Box</h3>
+        <p class="meta">Boxed Collection</p>
+        <p>Black wooden keepsake box stamped with the gold sigil &mdash; inside: a sigil sticker, guitar pick, pin badge and keyring.</p>
+        <p class="price">&pound;12</p>
+        <a class="btn" href="https://buy.stripe.com/cNieV67mj41Hgwq6zvfnO00">Buy Now</a>
       </div>
       <div class="card">
-        <h3>Title Hoodie</h3>
-        <p class="meta">Hoodie &mdash; Black</p>
-        <p>Heavyweight hoodie with the full band title print across the front.</p>
-        <p class="price">Coming Soon</p>
-        <a class="btn" href="/contact">Enquire</a>
-      </div>
-      <div class="card">
-        <h3>Sigil Patch</h3>
-        <p class="meta">Embroidered Patch</p>
-        <p>Gold-stitched sigil patch for your battle jacket.</p>
-        <p class="price">Coming Soon</p>
-        <a class="btn" href="/contact">Enquire</a>
+        <img class="product-photo" src="Pictures/Merch/necklace-1.jpg" alt="Silver dog-tag necklace engraved with the sigil, presented in its gift box">
+        <div class="thumbs">
+          <img src="Pictures/Merch/necklace-1.jpg" class="active" alt="Necklace in its gift box">
+          <img src="Pictures/Merch/necklace-2.jpg" alt="Necklace resting on the Wither To Nothing box">
+        </div>
+        <h3>Sigil Necklace</h3>
+        <p class="meta">Engraved Dog Tag</p>
+        <p>Stainless-steel dog tag engraved with the sigil, on a matching chain. Arrives in a Wither To Nothing gift box.</p>
+        <p class="price">&pound;15</p>
+        <a class="btn" href="https://buy.stripe.com/14AbIUayvcydgwqga5fnO02">Buy Now</a>
       </div>
     </div>
+
+    <p class="merch-note">Secure checkout by Stripe &mdash; ships from the UK.</p>
   </main>
 
   <footer>
@@ -75,5 +81,19 @@
     <img class="footer-logo" src="Pictures/Logo - Yellow With No Background.png" alt="">
     &copy; 2026 Wither To Nothing. All rights reserved.
   </footer>
+
+  <script>
+    document.querySelectorAll('.card .thumbs').forEach(function (thumbs) {
+      var main = thumbs.parentElement.querySelector('.product-photo');
+      thumbs.querySelectorAll('img').forEach(function (thumb) {
+        thumb.addEventListener('click', function () {
+          main.src = thumb.src;
+          main.alt = thumb.alt;
+          thumbs.querySelectorAll('img').forEach(function (t) { t.classList.remove('active'); });
+          thumb.classList.add('active');
+        });
+      });
+    });
+  </script>
 </body>
 </html>
