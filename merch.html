@@ -84,15 +84,37 @@
 
   <script>
     document.querySelectorAll('.card .thumbs').forEach(function (thumbs) {
-      var main = thumbs.parentElement.querySelector('.product-photo');
-      thumbs.querySelectorAll('img').forEach(function (thumb) {
+      var card = thumbs.parentElement;
+      var main = card.querySelector('.product-photo');
+      var imgs = Array.prototype.slice.call(thumbs.querySelectorAll('img'));
+      var index = 0;
+      var timer = null;
+
+      function show(i) {
+        index = i;
+        main.src = imgs[i].src;
+        main.alt = imgs[i].alt;
+        imgs.forEach(function (t) { t.classList.remove('active'); });
+        imgs[i].classList.add('active');
+      }
+
+      function start() {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        clearInterval(timer);
+        timer = setInterval(function () { show((index + 1) % imgs.length); }, 5000);
+      }
+
+      imgs.forEach(function (thumb, i) {
         thumb.addEventListener('click', function () {
-          main.src = thumb.src;
-          main.alt = thumb.alt;
-          thumbs.querySelectorAll('img').forEach(function (t) { t.classList.remove('active'); });
-          thumb.classList.add('active');
+          show(i);
+          start();
         });
       });
+
+      card.addEventListener('mouseenter', function () { clearInterval(timer); });
+      card.addEventListener('mouseleave', start);
+
+      start();
     });
   </script>
 </body>
