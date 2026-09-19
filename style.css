@@ -204,6 +204,71 @@ main {
   margin-top: 0.35rem;
 }
 
+/* ---------- Featured release ---------- */
+
+.featured-release {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) 1fr;
+  gap: 2rem;
+  align-items: center;
+  background: var(--dark);
+  border: 1px solid #1e1e1e;
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+  transition: border-color 0.3s ease;
+}
+
+.featured-release:hover {
+  border-color: var(--gold-dim);
+}
+
+.featured-art {
+  display: block;
+}
+
+.featured-art img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border: 1px solid #222;
+  transition: transform 0.3s ease;
+}
+
+.featured-art:hover img {
+  transform: scale(1.02);
+}
+
+.featured-info .meta {
+  color: var(--gold);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+}
+
+.featured-info h2 {
+  color: var(--white);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  font-size: 1.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.featured-info p {
+  color: var(--grey);
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .featured-release {
+    grid-template-columns: 1fr;
+    padding: 1.25rem;
+  }
+}
+
 /* ---------- Cards (releases / events / merch) ---------- */
 
 .card-grid {
